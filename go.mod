@@ -3,7 +3,7 @@ module github.com/protolambda/istanbul-demo
 go 1.21.4
 
 require (
-	github.com/ethereum-optimism/optimism v0.0.0
+    github.com/ethereum-optimism/optimism v0.0.0-20240822203311-58793000d754
 	github.com/ethereum/go-ethereum v1.14.8
 )
 
@@ -198,7 +198,5 @@ require (
 	lukechampine.com/blake3 v1.2.1 // indirect
 	rsc.io/tmplfunc v0.0.3 // indirect
 )
-
-replace github.com/ethereum-optimism/optimism v0.0.0 => ../optimism
 
 replace github.com/ethereum/go-ethereum v1.14.8 => github.com/ethereum-optimism/op-geth v1.101408.0-rc.4
