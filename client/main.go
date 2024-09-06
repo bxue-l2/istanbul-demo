@@ -3,8 +3,10 @@ package main
 import (
 	"encoding/binary"
 	"fmt"
-	preimage "github.com/ethereum-optimism/optimism/op-preimage"
 	"os"
+
+	preimage "github.com/ethereum-optimism/optimism/op-preimage"
+	program_client "github.com/ethereum-optimism/optimism/op-program/client"
 )
 
 type rawHint string
@@ -16,11 +18,15 @@ func (rh rawHint) Hint() string {
 func main() {
 	_, _ = os.Stderr.Write([]byte("started!"))
 
-	po := preimage.NewOracleClient(preimage.CreatePreimageChannel())
-	hinter := preimage.NewHintWriter(preimage.CreateHinterChannel())
+	po := preimage.NewOracleClient(program_client.CreatePreimageChannel())
+	hinter := preimage.NewHintWriter(program_client.CreateHinterChannel())
 	preHash := *(*[32]byte)(po.Get(preimage.LocalIndexKey(0)))
 	diffHash := *(*[32]byte)(po.Get(preimage.LocalIndexKey(1)))
 	claimData := *(*[8]byte)(po.Get(preimage.LocalIndexKey(2)))
+
+	fmt.Printf("preHash %x\n", preHash)
+	fmt.Printf("diffHash %x\n", diffHash)
+	fmt.Printf("claimData %x\n", claimData)
 
 	// Hints are used to indicate which things the program will access,
 	// so the server can be prepared to serve the corresponding pre-images.

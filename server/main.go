@@ -5,18 +5,20 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"errors"
+	"io"
+	"io/fs"
+	"os"
+	"strings"
+
+	oppio "github.com/ethereum-optimism/optimism/op-preimage"
 	preimage "github.com/ethereum-optimism/optimism/op-preimage"
-	"github.com/ethereum-optimism/optimism/op-preimage/kvstore"
-	oppio "github.com/ethereum-optimism/optimism/op-program/io"
+	program_client "github.com/ethereum-optimism/optimism/op-program/client"
+	"github.com/ethereum-optimism/optimism/op-program/host/kvstore"
 	oplog "github.com/ethereum-optimism/optimism/op-service/log"
 	"github.com/ethereum-optimism/optimism/op-service/opio"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/log"
-	"io"
-	"io/fs"
-	"os"
-	"strings"
 )
 
 func main() {
@@ -30,8 +32,8 @@ func main() {
 	})
 	logger.Info("started server")
 
-	preimageChan := preimage.CreatePreimageChannel()
-	hinterChan := preimage.CreateHinterChannel()
+	preimageChan := program_client.CreatePreimageChannel()
+	hinterChan := program_client.CreateHinterChannel()
 	err := server(ctx, logger, preimageChan, hinterChan)
 	if err != nil {
 		logger.Error("server error", "err", err)
@@ -61,7 +63,7 @@ func server(ctx context.Context, logger log.Logger, preimageChannel oppio.FileCh
 
 	// prepare initial game
 	s := uint64(1000)
-	a := uint64(3)
+	a := uint64(5)
 	b := uint64(4)
 
 	var diff []byte
@@ -71,12 +73,14 @@ func server(ctx context.Context, logger log.Logger, preimageChannel oppio.FileCh
 	preHash := crypto.Keccak256Hash(encodeU64(s))
 	diffHash := crypto.Keccak256Hash(diff)
 
+	//_ = kv.Put(preimage.LocalIndexKey(0).PreimageKey(), preHash[:])
 	_ = kv.Put(preimage.LocalIndexKey(0).PreimageKey(), preHash[:])
 	_ = kv.Put(preimage.LocalIndexKey(1).PreimageKey(), diffHash[:])
 	_ = kv.Put(preimage.LocalIndexKey(2).PreimageKey(), encodeU64(s*a+b))
 
 	getPreimage := preimage.PreimageGetter(func(key [32]byte) ([]byte, error) {
-		return kv.Get(key)
+		a, err := kv.Get(key)
+		return a, err
 	})
 
 	hinter := preimage.HintHandler(func(hint string) error {
@@ -105,6 +109,8 @@ func server(ctx context.Context, logger log.Logger, preimageChannel oppio.FileCh
 				_ = kv.Put(preimage.Keccak256Key(diffHash).PreimageKey(), diff)
 				_ = kv.Put(preimage.Keccak256Key(crypto.Keccak256Hash(encodeU64(a))).PreimageKey(), encodeU64(a))
 				_ = kv.Put(preimage.Keccak256Key(crypto.Keccak256Hash(encodeU64(b))).PreimageKey(), encodeU64(b))
+				//_ = kv.Put(preimage.Keccak256Key(crypto.Keccak256Hash(encodeU64(a))).PreimageKey(), encodeU64(a-1))
+				//_ = kv.Put(preimage.Keccak256Key(crypto.Keccak256Hash(encodeU64(b))).PreimageKey(), encodeU64(b-1))
 			default:
 				log.Warn("unknown diff request", "hash", h)
 			}
